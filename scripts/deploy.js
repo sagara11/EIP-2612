@@ -6,13 +6,13 @@
 // global scope, and execute the script.
 const { ethers } = require("hardhat");
 const hre = require("hardhat");
+const EIP_191_PREFIX = Buffer.from("1901", "hex");
 
 async function main() {
   const [signer] = await ethers.getSigners();
   const currentTimestampInSeconds = Math.round(Date.now() / 1000);
   const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
   const unlockTime = currentTimestampInSeconds + 10;
-  const EIP_191_PREFIX = Buffer.from('1901', 'hex');
 
   const lockedAmount = hre.ethers.utils.parseEther("1");
 
@@ -23,9 +23,6 @@ async function main() {
   console.log("Lock with 1 ETH deployed to:", lock.address);
 
   // Generate a random private key
-  const privateKey =
-    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-  const signingKey = new ethers.utils.SigningKey(privateKey);
 
   const typedData = {
     types: {
@@ -53,23 +50,30 @@ async function main() {
     },
   };
 
-  const message = getMessage(typedData, true);
+  const domain = typedData.domain;
+  const types = {
+    withdraw: [
+      { name: "_owner", type: "address" },
+      { name: "_myParam", type: "uint256" },
+    ],
+  };
+  const value = typedData.message;
 
-  // Sign the message with the private key
-  const { r, s, v } = signingKey.signDigest(message);
+  let signature = await signer._signTypedData(domain, types, value);
 
-  console.log(`Message: 0x${bytesToHex(message)}`);
-  console.log(`Signature: (${r}, ${s}, ${v})`);
+  signature = signature.substring(2);
+  const r = "0x" + signature.substring(0, 64);
+  const s = "0x" + signature.substring(64, 128);
+  const v = parseInt(signature.substring(128, 130), 16);
+
+  console.log("r:", r.length);
+  console.log("s:", s.length);
+  console.log("v:", v);
+  console.log(signature);
+  console.log(signer.address)
+
+  await lock.executeMyFunctionFromSignature(v, r, s, signer.address, 1000000);
 }
-
-const getMessage = async () => {
-  const domain_separator = ethers.utils.keccak256(typedData.types, typedData.domain)
-  const message = Buffer.concat([
-    EIP_191_PREFIX,
-    
-  ]);
-}
-
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.

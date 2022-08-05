@@ -37,8 +37,7 @@ contract Lock {
         bytes32 r,
         bytes32 s,
         address _owner,
-        uint256 myParam,
-        uint256 deadline
+        uint256 _myParam
     ) external {
         bytes32 eip712DomainHash = keccak256(
             abi.encode(
@@ -47,20 +46,16 @@ contract Lock {
                 ),
                 keccak256(bytes("Lock")),
                 keccak256(bytes("1")),
-                block.chainid,
+                31337,
                 address(this)
             )
         );
 
         bytes32 hashStruct = keccak256(
             abi.encode(
-                keccak256(
-                    "withdraw(address owner,uint256 myParam,uint256 nonce,uint256 deadline)"
-                ),
-                owner,
-                myParam,
-                nonces[owner],
-                deadline
+                keccak256("withdraw(address _owner, uint256 _myParam)"),
+                _owner,
+                _myParam
             )
         );
 
@@ -71,16 +66,10 @@ contract Lock {
         address signer = ecrecover(hashValue, v, r, s);
 
         console.log("The owner is %o and origin owner is %o", signer, _owner);
-        
-        require(signer == owner, "MyFunction: invalid signature");
+        console.log("Time %o and %o:", block.chainid, address(this));
+        require(signer == _owner, "MyFunction: invalid signature");
         require(signer != address(0), "ECDSA: invalid signature");
 
-        require(
-            block.timestamp < deadline,
-            "MyFunction: signed transaction expired"
-        );
-        nonces[owner]++;
-
-        withdraw(_owner, myParam);
+        withdraw(_owner, _myParam);
     }
 }
