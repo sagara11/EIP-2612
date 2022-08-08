@@ -27,24 +27,33 @@ contract SimpleStorage {
                 keccak256(
                     "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
                 ),
-                keccak256(bytes("SetTest")),
+                keccak256(bytes("Thong")),
                 keccak256(bytes("1")),
                 31337,
                 address(this)
             )
         );
 
-        bytes32 hashStruct = keccak256(
+        // bytes32 hashStruct = keccak256(
+        //     abi.encode(
+        //         keccak256("set(bool sender,uint x,uint deadline)"),
+        //         sender,
+        //         x,
+        //         deadline
+        //     )
+        // );
+
+        bytes32 hashStruct_2 = keccak256(
             abi.encode(
-                keccak256("set(address sender,uint x,uint deadline)"),
-                sender,
+                keccak256("minhthong(uint x,uint deadline,bool isweb)"),
                 x,
-                deadline
+                deadline,
+                true
             )
         );
 
         bytes32 hash = keccak256(
-            abi.encodePacked("\x19\x01", eip712DomainHash, hashStruct)
+            abi.encodePacked("\x19\x01", eip712DomainHash, hashStruct_2)
         );
         address signer = ecrecover(hash, v, r, s);
         require(signer == sender, "MyFunction: invalid signature");

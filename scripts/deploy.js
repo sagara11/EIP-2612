@@ -57,16 +57,46 @@ async function main() {
 
   // console.log(signature);
 
+  // let signature = await signer._signTypedData(
+  //   {
+  //     name: "SetTest",
+  //     version: "1",
+  //     chainId: 31337,
+  //     verifyingContract: simpleStorage.address,
+  //   },
+  //   {
+  //     set: [
+  //       { name: "sender", type: "address" },
+  //       { name: "x", type: "uint" },
+  //       { name: "deadline", type: "uint" },
+  //     ],
+  //   },
+  //   {
+  //     sender: signer.address,
+  //     x: 100000,
+  //     deadline: 100000000000,
+  //   }
+  // );
+
   let signature = await signer._signTypedData(
-    msgParams.domain,
     {
-      set: [
-        { name: "sender", type: "address" },
+      name: "Thong",
+      version: "1",
+      chainId: 31337,
+      verifyingContract: simpleStorage.address,
+    },
+    {
+      minhthong: [
         { name: "x", type: "uint" },
         { name: "deadline", type: "uint" },
+        { name: "isweb", type: "bool" },
       ],
     },
-    msgParams.message
+    {
+      deadline: 100000000000,
+      x: 100000,
+      isweb: true,
+    }
   );
 
   console.log("signature", signature);
