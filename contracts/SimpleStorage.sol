@@ -3,6 +3,12 @@ pragma solidity ^0.8.0;
 
 contract SimpleStorage {
     uint256 storedData;
+    struct Person {
+        address addressOfuser;
+        uint256 amount;
+    }
+    bytes32 constant PERSON_TYPEHASH =
+        keccak256("Person(address addressOfuser,uint256 amount)");
 
     function set(uint256 x) internal {
         storedData = x;
@@ -10,6 +16,13 @@ contract SimpleStorage {
 
     function get() public view returns (uint256) {
         return storedData;
+    }
+
+    function hash(Person memory person) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(PERSON_TYPEHASH, person.addressOfuser, person.amount)
+            );
     }
 
     function executeSetIfSignatureMatch(
@@ -43,9 +56,18 @@ contract SimpleStorage {
         //     )
         // );
 
+        Person memory personInstance = Person(
+            0x70997970C51812dc3A010C7d01b50e0d17dc79C8,
+            1000
+        );
+
         bytes32 hashStruct_2 = keccak256(
             abi.encode(
-                keccak256("minhthong(uint x,uint deadline,bool isweb)"),
+                keccak256(
+                    "minhthong(Person personParams,bytes32 thing,uint x,uint deadline,bool isweb)Person(address addressOfuser,uint256 amount)"
+                ),
+                hash(personInstance),
+                keccak256(bytes("baongoclee")),
                 x,
                 deadline,
                 true

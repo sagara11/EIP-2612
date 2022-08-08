@@ -10,7 +10,7 @@ const EIP_191_PREFIX = Buffer.from("1901", "hex");
 
 async function main() {
   console.log(EIP_191_PREFIX);
-  const [signer] = await ethers.getSigners();
+  const [signer, client1] = await ethers.getSigners();
   const SimpleStorage = await hre.ethers.getContractFactory("SimpleStorage");
   const simpleStorage = await SimpleStorage.deploy();
 
@@ -26,6 +26,10 @@ async function main() {
         { name: "version", type: "string" },
         { name: "chainId", type: "uint256" },
         { name: "verifyingContract", type: "address" },
+      ],
+      person: [
+        { name: "addressOfuser", type: "address" },
+        { name: "amount", type: "uint" },
       ],
       set: [
         { name: "sender", type: "address" },
@@ -78,6 +82,8 @@ async function main() {
   //   }
   // );
 
+  const testing = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("baongoclee"));
+
   let signature = await signer._signTypedData(
     {
       name: "Thong",
@@ -86,15 +92,26 @@ async function main() {
       verifyingContract: simpleStorage.address,
     },
     {
+      Person: [
+        { name: "addressOfuser", type: "address" },
+        { name: "amount", type: "uint256" },
+      ],
       minhthong: [
+        { name: "personParams", type: "Person" },
+        { name: "thing", type: "bytes32" },
         { name: "x", type: "uint" },
         { name: "deadline", type: "uint" },
         { name: "isweb", type: "bool" },
       ],
     },
     {
-      deadline: 100000000000,
+      personParams: {
+        addressOfuser: client1.address,
+        amount: 1000,
+      },
+      thing: ethers.utils.keccak256(testing),
       x: 100000,
+      deadline: 100000000000,
       isweb: true,
     }
   );
