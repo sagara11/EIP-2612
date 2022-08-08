@@ -9,22 +9,17 @@ const hre = require("hardhat");
 const EIP_191_PREFIX = Buffer.from("1901", "hex");
 
 async function main() {
+  console.log(EIP_191_PREFIX);
   const [signer] = await ethers.getSigners();
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + 10;
+  const SimpleStorage = await hre.ethers.getContractFactory("SimpleStorage");
+  const simpleStorage = await SimpleStorage.deploy();
 
-  const lockedAmount = hre.ethers.utils.parseEther("1");
-
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime);
-
-  await lock.deployed();
-  console.log("Lock with 1 ETH deployed to:", lock.address);
+  await simpleStorage.deployed();
+  console.log("SimpleStorage with 1 ETH deployed to:", simpleStorage.address);
 
   // Generate a random private key
 
-  const typedData = {
+  const msgParams = {
     types: {
       EIP712Domain: [
         { name: "name", type: "string" },
@@ -32,47 +27,69 @@ async function main() {
         { name: "chainId", type: "uint256" },
         { name: "verifyingContract", type: "address" },
       ],
-      withdraw: [
-        { name: "_owner", type: "address" },
-        { name: "_myParam", type: "uint256" },
+      set: [
+        { name: "sender", type: "address" },
+        { name: "x", type: "uint" },
+        { name: "deadline", type: "uint" },
       ],
     },
+    //make sure to replace verifyingContract with address of deployed contract
+    primaryType: "set",
     domain: {
-      name: "Lock",
+      name: "SetTest",
       version: "1",
       chainId: 31337,
-      verifyingContract: lock.address,
+      verifyingContract: simpleStorage.address,
     },
-    primaryType: "withdraw",
     message: {
-      _owner: signer.address,
-      _myParam: 1000000,
+      sender: signer.address,
+      x: 100000,
+      deadline: 100000000000,
     },
   };
 
-  const domain = typedData.domain;
-  const types = {
-    withdraw: [
-      { name: "_owner", type: "address" },
-      { name: "_myParam", type: "uint256" },
-    ],
-  };
-  const value = typedData.message;
+  // const digest = TypedDataUtils.encodeDigest(typedData);
 
-  let signature = await signer._signTypedData(domain, types, value);
+  // let signature = await signer.provider.send("eth_signTypedData_v3", [
+  //   signer.address,
+  //   JSON.stringify(typedData),
+  // ]);
+
+  // console.log(signature);
+
+  let signature = await signer._signTypedData(
+    msgParams.domain,
+    {
+      set: [
+        { name: "sender", type: "address" },
+        { name: "x", type: "uint" },
+        { name: "deadline", type: "uint" },
+      ],
+    },
+    msgParams.message
+  );
+
+  console.log("signature", signature);
 
   signature = signature.substring(2);
   const r = "0x" + signature.substring(0, 64);
   const s = "0x" + signature.substring(64, 128);
   const v = parseInt(signature.substring(128, 130), 16);
 
-  console.log("r:", r.length);
-  console.log("s:", s.length);
+  console.log("r:", r);
+  console.log("s:", s);
   console.log("v:", v);
-  console.log(signature);
-  console.log(signer.address)
+  console.log(signature.length);
+  console.log(signer.address);
 
-  await lock.executeMyFunctionFromSignature(v, r, s, signer.address, 1000000);
+  await simpleStorage.executeSetIfSignatureMatch(
+    v,
+    r,
+    s,
+    signer.address,
+    100000000000,
+    100000
+  );
 }
 
 // We recommend this pattern to be able to use async/await everywhere
