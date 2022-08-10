@@ -37,44 +37,66 @@ contract SimpleStorage {
             );
     }
 
-    function verifyPersonalSign(
-        uint8 v,
-        bytes32 r,
-        bytes32 s,
-        address sender,
-        uint256 deadline,
-        uint256 x
-    ) external {
-        Person memory personInstance = Person(
-            0x70997970C51812dc3A010C7d01b50e0d17dc79C8,
-            1000
-        );
-        bytes32 hashStruct_2 = keccak256(
-            abi.encode(
-                keccak256(
-                    "minhthong(Person personParams,bytes32 thing,uint x,uint deadline,bool isweb)Person(address addressOfuser,uint256 amount)"
-                ),
-                hash(personInstance),
-                keccak256(bytes("baongoclee")),
-                x,
-                deadline,
-                true
-            )
-        );
+    function verifySig(
+        address _signer,
+        string memory _message,
+        bytes memory _sig
+    ) external pure returns (bool) {
+        bytes32 messageHash = getMessageHash(_message);
+        bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
 
-        bytes32 _hash = keccak256(abi.encode("hello world"));
+        return recover(ethSignedMessageHash, _sig) == _signer;
+    }
 
-        bytes32 test = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash)
-        );
+    function recover(bytes32 _ethSignedMessageHash, bytes memory _sig)
+        public
+        pure
+        returns (address)
+    {
+        (bytes32 r, bytes32 s, uint8 v) = _split(_sig);
+        return ecrecover(_ethSignedMessageHash, v, r, s);
+    }
 
-        // bytes32 _hash = prefixed(hashStruct_2);
-        address signer = ecrecover(test, v, r, s);
+    function _split(bytes memory _sig)
+        internal
+        pure
+        returns (
+            bytes32 r,
+            bytes32 s,
+            uint8 v
+        )
+    {
+        require(_sig.length == 65, "invalid signatrue length");
 
-        console.log("signer is %o and sender is %o", signer, sender);
-        require(signer != address(0) && signer == sender, "Invalid signature");
+        assembly {
+            r := mload(add(_sig, 32))
+            s := mload(add(_sig, 64))
+            v := byte(0, mload(add(_sig, 96)))
+        }
+    }
 
-        set(x);
+    function getMessageHash(string memory _message)
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(_message));
+    }
+
+    function getEthSignedMessageHash(bytes32 _messageHash)
+        public
+        pure
+        returns (bytes32)
+    {
+        return
+            keccak256(
+                (
+                    abi.encodePacked(
+                        "\x19Ethereum Signed Message:\n32",
+                        _messageHash
+                    )
+                )
+            );
     }
 
     function executeSetIfSignatureMatch(

@@ -4,7 +4,7 @@
 // You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
-const { ethers } = require("hardhat");
+const { ethers, web3 } = require("hardhat");
 const hre = require("hardhat");
 const EIP_191_PREFIX = Buffer.from("1901", "hex");
 
@@ -84,39 +84,47 @@ async function main() {
     }
   );
 
-  //   let dataHash = ethers.utils.keccak256(
-  //     ethers.utils.toUtf8Bytes(JSON.stringify(params))
-  //   );
-
-  //   const dataHashBin = Buffer.from(dataHash);
-  //   const finalBuf = await ethers.utils.keccak256(dataHashBin);
-
-//   const { r, v, s, signature } = await web3.eth.accounts.sign(
-//     "\x19Ethereum Signed Message:\n32" + message.length + message,
-//     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-//   );
-const wallet = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", ethers.provider);
-let signature = await signer.signMessage("hello world");
-console.log(await signature);
-  signature = signature.substring(2);
-  const r = "0x" + signature.substring(0, 64);
-  const s = "0x" + signature.substring(64, 128);
-  const v = parseInt(signature.substring(128, 130), 16);
-
-  console.log("r:", r);
-  console.log("s:", s);
-  console.log("v:", parseInt(v, 16));
-  console.log(signature);
-  console.log(signer.address);
-
-  await simpleStorage.verifyPersonalSign(
-    parseInt(v, 16),
-    r,
-    s,
-    signer.address,
-    100000000000,
-    100000
+  const hash = await ethers.utils.keccak256(
+    ethers.utils.toUtf8Bytes("hello world")
   );
+
+  console.log(hash);
+
+  const encodeString = await ethers.utils.solidityPack(
+    ["string", "bytes32"],
+    ["\x19Ethereum Signed Message:\n32", hash]
+  );
+
+  const finalHash = await ethers.utils.keccak256(encodeString);
+
+  const signature =
+    "0x7ac9a96fdff615dbab27b61b508b8130a459b2d31d68fe0c01517e3f1f7f482310c88e5d82094424c04a81b2c4bc813766579001e0a3df33e0a99dcd3d2674611b";
+
+  // let sig1 = await web3.eth.sign(hash, address);
+
+  await web3.eth.accounts.sign(data, privateKey);
+
+  console.log(signature, accounts[0]);
+
+  //   signature = signature.substring(2);
+  //   const r = "0x" + signature.substring(0, 64);
+  //   const s = "0x" + signature.substring(64, 128);
+  //   const v = parseInt(signature.substring(128, 130), 16);
+
+  //   console.log("r:", r);
+  //   console.log("s:", s);
+  //   console.log("v:", parseInt(v, 16));
+  //   console.log(signature);
+  //   console.log(signer.address);
+
+  // const result = await simpleStorage.recover(finalHash, signature);
+  const result = await simpleStorage.verifySig(
+    "0xd3F48a6f420904829Bb82815A0d78ace694265b5",
+    "hello world",
+    signature
+  );
+
+  console.log(result);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
