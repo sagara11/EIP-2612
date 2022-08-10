@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
+
 contract SimpleStorage {
     uint256 storedData;
     struct Person {
@@ -9,6 +11,9 @@ contract SimpleStorage {
     }
     bytes32 constant PERSON_TYPEHASH =
         keccak256("Person(address addressOfuser,uint256 amount)");
+
+    mapping(address => uint256) nonces;
+    mapping(address => mapping(address => uint)) approval;
 
     function set(uint256 x) internal {
         storedData = x;
@@ -23,6 +28,53 @@ contract SimpleStorage {
             keccak256(
                 abi.encode(PERSON_TYPEHASH, person.addressOfuser, person.amount)
             );
+    }
+
+    function prefixed(bytes32 _hash) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash)
+            );
+    }
+
+    function verifyPersonalSign(
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        address sender,
+        uint256 deadline,
+        uint256 x
+    ) external {
+        Person memory personInstance = Person(
+            0x70997970C51812dc3A010C7d01b50e0d17dc79C8,
+            1000
+        );
+        bytes32 hashStruct_2 = keccak256(
+            abi.encode(
+                keccak256(
+                    "minhthong(Person personParams,bytes32 thing,uint x,uint deadline,bool isweb)Person(address addressOfuser,uint256 amount)"
+                ),
+                hash(personInstance),
+                keccak256(bytes("baongoclee")),
+                x,
+                deadline,
+                true
+            )
+        );
+
+        bytes32 _hash = keccak256(abi.encode("hello world"));
+
+        bytes32 test = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash)
+        );
+
+        // bytes32 _hash = prefixed(hashStruct_2);
+        address signer = ecrecover(test, v, r, s);
+
+        console.log("signer is %o and sender is %o", signer, sender);
+        require(signer != address(0) && signer == sender, "Invalid signature");
+
+        set(x);
     }
 
     function executeSetIfSignatureMatch(
@@ -82,5 +134,59 @@ contract SimpleStorage {
         require(signer != address(0), "ECDSA: invalid signature");
 
         set(x);
+    }
+
+    function permit(
+        address holder,
+        address taker,
+        uint256 nonce,
+        uint256 deadline,
+        bool isPermitted,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public {
+        bytes32 DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes("withdrawal")),
+                keccak256(bytes("1")),
+                31337,
+                address(this)
+            )
+        );
+
+        bytes32 hashStruct = keccak256(
+            abi.encode(
+                keccak256(
+                    "permit(address holder,address taker,uint nonce,uint deadline,bool isPermitted)"
+                ),
+                holder,
+                taker,
+                nonce,
+                deadline,
+                isPermitted
+            )
+        );
+        bytes32 EIP721hash = keccak256(
+            abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct)
+        );
+        require(holder != address(0), "invalid holder");
+        require(holder == ecrecover(EIP721hash, v, r, s), "invalid owner");
+        require(deadline == 0 || deadline >= block.timestamp, "permit expired");
+
+        nonces[holder]++;
+        uint check = isPermitted ? type(uint).max : 0;
+        approval[holder][taker] = check;
+    }
+
+    function getInfor(address _holder, address _taker)
+        public
+        view
+        returns (uint256, uint)
+    {
+        return (nonces[_holder], approval[_holder][_taker]);
     }
 }
