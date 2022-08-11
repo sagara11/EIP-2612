@@ -5,6 +5,9 @@ import "hardhat/console.sol";
 
 contract SimpleStorage {
     uint256 storedData;
+    bytes32 public hashStruct_2;
+    bytes32 public ethSignedMessageHash_1;
+
     struct Person {
         address addressOfuser;
         uint256 amount;
@@ -13,7 +16,7 @@ contract SimpleStorage {
         keccak256("Person(address addressOfuser,uint256 amount)");
 
     mapping(address => uint256) nonces;
-    mapping(address => mapping(address => uint)) approval;
+    mapping(address => mapping(address => uint256)) approval;
 
     function set(uint256 x) internal {
         storedData = x;
@@ -200,14 +203,72 @@ contract SimpleStorage {
         require(deadline == 0 || deadline >= block.timestamp, "permit expired");
 
         nonces[holder]++;
-        uint check = isPermitted ? type(uint).max : 0;
+        uint256 check = isPermitted ? type(uint256).max : 0;
         approval[holder][taker] = check;
+    }
+
+    function thongVerify(
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        address sender,
+        uint256 deadline,
+        uint256 x
+    ) public returns (bytes32) {
+        bytes32 DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes("Thong")),
+                keccak256(bytes("1")),
+                31337,
+                address(this)
+            )
+        );
+
+        hashStruct_2 = keccak256(
+            abi.encode(
+                keccak256("minhthong(uint x,uint deadline,bool isweb)"),
+                x,
+                deadline,
+                true
+            )
+        );
+
+        ethSignedMessageHash_1 = getEthSignedMessageHashThong(
+            hashStruct_2,
+            DOMAIN_SEPARATOR
+        );
+
+        address signer = ecrecover(ethSignedMessageHash_1, v, r, s);
+
+        require(signer == sender, "invalid signature");
+
+        set(x);
+    }
+
+    function getEthSignedMessageHashThong(bytes32 _messageHash, bytes32 _domain)
+        public
+        pure
+        returns (bytes32)
+    {
+        return
+            keccak256(
+                (
+                    abi.encodePacked(
+                        "\x19Ethereum Signed Message:\n32",
+                        _domain,
+                        _messageHash
+                    )
+                )
+            );
     }
 
     function getInfor(address _holder, address _taker)
         public
         view
-        returns (uint256, uint)
+        returns (uint256, uint256)
     {
         return (nonces[_holder], approval[_holder][_taker]);
     }

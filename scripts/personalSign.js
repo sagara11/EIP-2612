@@ -54,10 +54,6 @@ async function main() {
 
   const testing = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("baongoclee"));
 
-  const prehash = await ethers.utils.hashMessage(
-    "\x19Ethereum Signed Message:\n32"
-  );
-
   let params = JSON.stringify(
     {
       Person: [
@@ -88,8 +84,6 @@ async function main() {
     ethers.utils.toUtf8Bytes("hello world")
   );
 
-  console.log(hash);
-
   const encodeString = await ethers.utils.solidityPack(
     ["string", "bytes32"],
     ["\x19Ethereum Signed Message:\n32", hash]
@@ -97,14 +91,20 @@ async function main() {
 
   const finalHash = await ethers.utils.keccak256(encodeString);
 
-  const signature =
+  const signature_1 =
     "0x7ac9a96fdff615dbab27b61b508b8130a459b2d31d68fe0c01517e3f1f7f482310c88e5d82094424c04a81b2c4bc813766579001e0a3df33e0a99dcd3d2674611b";
 
-  // let sig1 = await web3.eth.sign(hash, address);
+  const { signature } = await web3.eth.accounts.sign(
+    hash,
+    "0x7c5312f73d84e969da53987e2d7dbb969c7548ac544123b4306177e49637542c"
+  );
 
-  await web3.eth.accounts.sign(data, privateKey);
-
-  console.log(signature, accounts[0]);
+  console.log(
+    hash,
+    finalHash,
+    await simpleStorage.getEthSignedMessageHash(hash),
+    signature
+  );
 
   //   signature = signature.substring(2);
   //   const r = "0x" + signature.substring(0, 64);
