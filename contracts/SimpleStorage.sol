@@ -42,13 +42,38 @@ contract SimpleStorage {
 
     function verifySig(
         address _signer,
-        string memory _message,
+        uint256 _amount,
+        bool _isTest,
         bytes memory _sig
     ) external pure returns (bool) {
-        bytes32 messageHash = getMessageHash(_message);
+        bytes32 messageHash = getMessageHash(_amount, _isTest);
         bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
 
         return recover(ethSignedMessageHash, _sig) == _signer;
+    }
+
+    function getMessageHash(uint256 _amount, bool _isTest)
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(_amount, _isTest));
+    }
+
+    function getEthSignedMessageHash(bytes32 _messageHash)
+        public
+        pure
+        returns (bytes32)
+    {
+        return
+            keccak256(
+                (
+                    abi.encodePacked(
+                        "\x19Ethereum Signed Message:\n32",
+                        _messageHash
+                    )
+                )
+            );
     }
 
     function recover(bytes32 _ethSignedMessageHash, bytes memory _sig)
@@ -76,30 +101,6 @@ contract SimpleStorage {
             s := mload(add(_sig, 64))
             v := byte(0, mload(add(_sig, 96)))
         }
-    }
-
-    function getMessageHash(string memory _message)
-        public
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encodePacked(_message));
-    }
-
-    function getEthSignedMessageHash(bytes32 _messageHash)
-        public
-        pure
-        returns (bytes32)
-    {
-        return
-            keccak256(
-                (
-                    abi.encodePacked(
-                        "\x19Ethereum Signed Message:\n32",
-                        _messageHash
-                    )
-                )
-            );
     }
 
     function executeSetIfSignatureMatch(

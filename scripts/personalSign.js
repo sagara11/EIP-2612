@@ -80,29 +80,35 @@ async function main() {
     }
   );
 
-  const hash = await ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes("hello world")
+  // const hash = await ethers.utils.keccak256(
+  //   ethers.utils.toUtf8Bytes("hello world")
+  // );
+
+  const abi = ethers.utils.defaultAbiCoder;
+
+  const hashstructByte = await ethers.utils.keccak256(
+    ethers.utils.solidityPack(["uint256", "bool"], [100000000000, true])
   );
 
   const encodeString = await ethers.utils.solidityPack(
     ["string", "bytes32"],
-    ["\x19Ethereum Signed Message:\n32", hash]
+    ["\x19Ethereum Signed Message:\n32", hashstructByte]
   );
 
   const finalHash = await ethers.utils.keccak256(encodeString);
 
-  const signature_1 =
-    "0x7ac9a96fdff615dbab27b61b508b8130a459b2d31d68fe0c01517e3f1f7f482310c88e5d82094424c04a81b2c4bc813766579001e0a3df33e0a99dcd3d2674611b";
+  // const signature_1 =
+  //   "0x7ac9a96fdff615dbab27b61b508b8130a459b2d31d68fe0c01517e3f1f7f482310c88e5d82094424c04a81b2c4bc813766579001e0a3df33e0a99dcd3d2674611b";
 
   const { signature } = await web3.eth.accounts.sign(
-    hash,
+    hashstructByte,
     "0x7c5312f73d84e969da53987e2d7dbb969c7548ac544123b4306177e49637542c"
   );
 
   console.log(
-    hash,
+    hashstructByte,
     finalHash,
-    await simpleStorage.getEthSignedMessageHash(hash),
+    await simpleStorage.getEthSignedMessageHash(hashstructByte),
     signature
   );
 
@@ -120,7 +126,8 @@ async function main() {
   // const result = await simpleStorage.recover(finalHash, signature);
   const result = await simpleStorage.verifySig(
     "0xd3F48a6f420904829Bb82815A0d78ace694265b5",
-    "hello world",
+    100000000000,
+    true,
     signature
   );
 
