@@ -102,7 +102,7 @@ async function main() {
 
   const { signature } = await web3.eth.accounts.sign(
     hashstructByte,
-    "0x7c5312f73d84e969da53987e2d7dbb969c7548ac544123b4306177e49637542c"
+    PRIVATE_KEY
   );
 
   console.log(
